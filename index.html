@@ -1,31 +1,291 @@
 <!doctype html>
 <html lang="zh-CN">
-  <head>
-    <!-- 必须的 meta 标签 -->
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-    <!-- Bootstrap 的 CSS 文件 -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css" integrity="sha384-p1KAotb3W9ndluCsqePPYnjRm3c6abdnIjo0tQwYUv83VsbsYd43RuofnFAaDo0E" crossorigin="anonymous">
+<head>
+  <!-- 必须的 meta 标签 -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-    <title>Hello, world!</title>
-  </head>
-  <body>
-    <h1>Hello, world!</h1>
+  <!-- Bootstrap 的 CSS 文件 -->
+  <link href="bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+  <script src="jquery/jquery-3.2.1.min.js"></script>
+  <script src="bootstrap/4.1.1/js/bootstrap.min.js"></script>
+
+  <link rel="stylesheet" href="code-mirror/lib/codemirror.css">
+  <link rel="stylesheet" href="code-mirror/theme/cobalt.css">
+  <script src="code-mirror/lib/codemirror.js"></script>
+  <script src="code-mirror/mod/javascript/javascript.js"></script>
+
+  <style>
+    #my-console .list-group-item {
+      padding: 0 0;
+    }
+
+    .float-end {
+      float: right !important;
+    }
+
+    .card-body {
+      flex: 1 1 auto;
+      padding: 0;
+    }
+
+    .badge-pill {
+      float: right !important;
+    }
+
+    .card-header {
+      padding: 0.25rem 1.25rem;
+      margin-bottom: 0;
+      background-color: rgba(0,0,0,.03);
+      border-bottom: 1px solid rgba(0,0,0,.125);
+    }
+
+    .my_console {
+      min-height: 200px;
+      padding: 0.25rem 1.25rem;
+    }
+
+    #file-list .list-group-item {
+      border:0;
+      padding: 0.5rem 1.25rem;
+    }
+  </style>
+
+  <title>javascript 在线执行</title>
+</head>
+
+<body>
+
+  <div class="header clearfix col-12">
+    <h3 class="text-muted">javascript 在线执行</h3>
+  </div>
+
+  <div class="row col-12">
+    <div class="col-2">
+      <div class="card" style="height: 100%;">
+        <div class="card-header">
+          <button type="button" class="btn btn-success float-end" onclick="showFileNameInput()">新建文件</button>
+        </div>
+        <div class="card-body">
+          <div class="list-group" id="file-list">
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-10">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          
+        </div>
+        <div class="card-body">
+          <textarea id="js-editor"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 ">
+      <div class="card">
+        <div class="card-header">
+          <button type="button" class="btn btn-primary" onclick="execute()">执行(保存)</button>
+          <button type="button" class="btn btn-link float-end" onclick="clearConsole()">清空</button>
+          <!--
+          <button type="button" class="btn btn-link float-end" onclick="copy()">复制</button>
+          -->
+        </div>
+        <div class="card-body" >
+          <ul class="list-group list-group-flush my_console" id="my-console"></ul>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+  <script>
+    var my_console;
+    var textA;
+    var editor;
+    window.onload = function () {
+      textA = document.getElementById("js-editor");
+      my_console = document.getElementById("my-console");
+
+      editor = CodeMirror.fromTextArea(textA, {
+        lineNumbers: true,
+        mode: { name: "javascript", json: true },
+        theme: "cobalt",
+        onBlur: function () { editor.save() }
+      });
+
+      editor.setSize('auto', '500px');
+
+      activeFile();
+    }
+
+    function initEditor() {
+      var active_file = document.getElementById("file-list").getElementsByClassName("active");
+      var file_name = active_file[0].innerHTML;
+      editor.setValue(get(file_name));
+    }
+
+    function initFlieList(active_file) {
+      let files = loadFilelist();
+      if (files.length == 0) {
+        save('hello-world.js', "var text = 'hello world';\nconsole.log(text);");
+        addToFileList('hello-world.js');
+        files = loadFilelist();
+      }
+
+      let lis = '';
+      for (index in files) {
+        let file_name = files[index];
+
+        if (active_file) {
+          if (active_file == file_name) {
+            lis += '<a href="#" class="list-group-item list-group-item-action active">' + file_name + '</a>';
+          } else {
+            lis += '<a href="#" class="list-group-item list-group-item-action" onclick="liClick(\''+ file_name +'\')">' + file_name + '<span class="badge badge-light badge-pill" onclick="del(\'' + file_name + '\')">X</span></a>';
+          }
+        } else {
+          if (index == 0) {
+            lis += '<a href="#" class="list-group-item list-group-item-action active">' + file_name + '</a>';
+          } else {
+            lis += '<a href="#" class="list-group-item list-group-item-action" onclick="liClick(\''+ file_name +'\')">' + file_name + '<span class="badge badge-light badge-pill"  onclick="del(\'' + file_name + '\')">X</span></a>';
+          }
+        }
+
+        document.getElementById("file-list").innerHTML = lis;
+      }
+    }
+
+    function activeFile(active_file) {
+      initFlieList(active_file);
+      initEditor();
+    }
+
+    function execute() {
+      var active_file = document.getElementById("file-list").getElementsByClassName("active");
+      var file_name = active_file[0].innerHTML;
+      my_console.innerHTML = '';
+      let t = editor.getValue();
+
+      addToFileList(file_name);
+      save(file_name, t);
+
+      try {
+        var f = new Function(t);
+        f();
+      } catch (t) {
+        my_console.innerHTML = "Error: " + t.message;
+      }
+    }
+
+    function reload() {
+      window.location.reload();
+    }
+
+    function clearConsole() {
+      my_console.innerHTML = '';
+    }
+
+    console.log = function (text) {
+      my_console.innerHTML = my_console.innerHTML + '<li class="list-group-item">' + text + '</li>'
+    }
+
+    function save(key, value) {
+      //('save key=' + key + ' value=' + value + ' ' + JSON.stringify(value));
+      window.localStorage.setItem(key, JSON.stringify(value));
+    }
+
+    function get(key) {
+      let r = window.localStorage.getItem(key);
+      return r ? JSON.parse(r) : r;
+    }
+
+    function removeItem(key) {
+      window.localStorage.removeItem(key);
+    }
+
+    var FILE_LIST_KEY = 'FILE_LIST_KEY#p0p01987';
+    var file_list_array = [];
+    let file_set = new Set();
+
+    function loadFilelist() {
+      let r = get(FILE_LIST_KEY);
+
+      let r_array = r ? r : [];
+
+      let lis = '';
+      for (fn of r_array) {
+        if (!file_set.has(fn)) {
+          file_list_array.push(fn);
+          file_set.add(fn);
+        }
+      }
+      return r_array;
+    }
+
+    function addToFileList(fileName) {
+      loadFilelist();
+      if (!file_set.has(fileName)) {
+        file_list_array.push(fileName);
+        file_set.add(fileName);
+        save(FILE_LIST_KEY, file_list_array);
+      }
+    }
+
+    function remFromFileList(fileName) {
+      file_list_array.forEach(function(item, index, arr) {
+        if(item === fileName) {
+          arr.splice(index, 1);
+          file_set.delete(fileName);
+        }
+      });
+
+      save(FILE_LIST_KEY, file_list_array);
+    }
+
+    var showNewFileInput = false;
+    function showFileNameInput() {
+      if (!showNewFileInput) {
+        let input = '<li class="list-group-item">'
+          + '<div class="input-group mb-3"><input id="new-file-name" type="text" class="form-control" placeholder="file name" aria-label="file name" aria-describedby="button-addon2"><div class="input-group-append"><button class="btn btn-outline-secondary" type="button" onclick="newFile()">确定</button></div></div>'
+          + '</li>';
+
+        let o = document.getElementById("file-list").innerHTML;
+        document.getElementById("file-list").innerHTML = o + input;
+        showNewFileInput = true;
+      }
+    }
+
+    function newFile() {
+      let file_name = document.getElementById("new-file-name").value + '.js';
+      if (file_set.has(file_name)) {
+        alert('该文件已存在');
+      }
+
+      addToFileList(file_name);
+      save(file_name, '');
+
+      activeFile(file_name);
+      showNewFileInput = false;
+    }
+
     
-    <textarea class="form-control" id="code-editor" rows="128"></textarea>
+    function liClick(file_name) {
+      activeFile(file_name);
+    }
 
-    <!-- JavaScript 文件是可选的。从以下两种建议中选择一个即可！ -->
+    function del(file_name) {
+      alert('确定删除' + file_name + '吗？');
+      removeItem(file_name);
+      remFromFileList(file_name);
 
-    <!-- 选项 1：jQuery 和 Bootstrap 集成包（集成了 Popper） -->
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-E5Sj1saJVFNzWWK3YIJB4LEDEEVEGaOdfmCprPDkfWUo+xkb6Ep52Q1TMEtgcFwi" crossorigin="anonymous"></script>
+      activeFile();
+    }
 
-    <!-- 选项 2：Popper 和 Bootstrap 的 JS 插件各自独立 -->
-    <!--
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.min.js" integrity="sha384-IjeXbuVdL81ilB5LykkImU8JN0WPja/i9uZAt2qjo2TnYk9NJ2MPfN3vzMH0R8n3" crossorigin="anonymous"></script>
-    -->
-  </body>
+  </script>
+</body>
+
 </html>
