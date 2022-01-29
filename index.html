@@ -50,6 +50,9 @@
       border:0;
       padding: 0.5rem 1.25rem;
     }
+    .red_text {
+      color: #dc3545;
+    }
   </style>
 
   <title>javascript 在线执行</title>
@@ -176,8 +179,9 @@
       try {
         var f = new Function(t);
         f();
-      } catch (t) {
-        my_console.innerHTML = "Error: " + t.message;
+      } catch (e) {
+        console.error('Uncaught ' + e);
+        //my_console.innerHTML = "Error: " + t.message;
       }
     }
 
@@ -191,6 +195,10 @@
 
     console.log = function (text) {
       my_console.innerHTML = my_console.innerHTML + '<li class="list-group-item">' + text + '</li>'
+    }
+
+    console.error = function (text) {
+      my_console.innerHTML = my_console.innerHTML + '<li class="list-group-item red_text">' + text + '</li>'
     }
 
     function save(key, value) {
