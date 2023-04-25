@@ -1,0 +1,13 @@
+{
+"user": "MSD",
+"format": "multi_pbe_gz",
+"zip": 20,
+"bucket": "msquare-data-s3-obs",
+"bag_key": "msd-premium_20220528-001937_S5Y3NG0R106527R_1653675348052458417/PLLMZ227_event_dbw_disabled_takeover_20220527-135636_1653680635653606485/PLLMZ227_event_dbw_disabled_takeover_20220527-152814_0.bag",
+"mviz_path": "simulation-mviz-obs/89c/mviz/89c43d630bb4b5e815b28813e3c78ef9980b6a7554c0a394cd1836ad",
+"plugin_path": "simulation-mviz-obs/89c/mviz/89c43d630bb4b5e815b28813e3c78ef9980b6a7554c0a394cd1836ad",
+"from": "sim-pre",
+"extra_info_path": "https://simulation-pre.momenta.works/sil-api/api/v2/open-api/task/task_event_info/64479b1db32f6e1804e7b6cc/629587f2dddc590aafc30fbe/2",
+"start_time": 12,
+"highlights_config": "default"
+}
